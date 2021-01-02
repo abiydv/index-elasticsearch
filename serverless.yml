@@ -62,7 +62,7 @@ functions:
     handler: src/es_stream.main
     events:
       - s3:
-          bucket: ${self:custom.fastlybucket}
+          bucket: ${self:custom.logbucket}
           event: s3:ObjectCreated:*
           existing: true
     timeout: 600
