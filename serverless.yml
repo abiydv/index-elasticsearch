@@ -1,0 +1,91 @@
+service: es-stream
+
+package:
+  exclude:
+    - node_modules/**
+    - env/**
+    - .serverless/**
+    - .vscode/**
+    - .pytest_cache/**
+    - package*.json
+    - __pycache__/**
+    - .jmx
+    - tests/**
+    - reports/**
+    - builds/**
+
+custom:
+    account: __AWS_ACCOUNT_ID__
+    cert: __CERT_ARN__
+    s3bucket: __S3_BUCKET__
+    logbucket: __S3_LOG_BUCKET__
+    alarmTopic: __SNS_ARN__
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: ops
+  region: us-west-1
+  stackName: ${self:provider.stage}-${self:service}
+  deploymentBucket:
+    name: ${self:custom.s3bucket}
+    serverSideEncryption: AES256
+  deploymentPrefix: serverless
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sns:*
+      Resource: ${self:custom.alarmTopic}
+    - Effect: Allow
+      Action:
+        - kms:Describe*
+        - kms:Decrypt*
+        - kms:List*
+      Resource: 'arn:aws:kms:${self:provider.region}:${self:custom.account}:key/*' 
+    - Effect: Allow
+      Action:
+        - s3:Describe*
+        - s3:List*
+      Resource: 'arn:aws:s3:::*' 
+    - Effect: Allow
+      Action:
+        - s3:Get*
+        - s3:Put*
+      Resource: 
+        - 'arn:aws:s3:::${self:custom.s3bucket}/*'
+        - 'arn:aws:s3:::${self:custom.logbucket}/*'
+
+functions:
+  es-stream:
+    name: ${self:provider.stage}-${self:service}-es-stream
+    description: streams logs from s3 to elasticsearch
+    handler: src/es_stream.main
+    events:
+      - s3:
+          bucket: ${self:custom.fastlybucket}
+          event: s3:ObjectCreated:*
+          existing: true
+    timeout: 600
+
+resources:
+  Resources:
+    esstreamAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: "es-stream-alarm"
+        AlarmDescription: "Alarm if es-stream errors out too many times"
+        Namespace: "AWS/Lambda"
+        MetricName: "Errors"
+        Dimensions:
+          - Name: "FunctionName"
+            Value: !GetAtt EsDashstreamLambdaFunction.Arn
+        Statistic: "Sum"
+        ComparisonOperator: "GreaterThanThreshold"
+        Threshold: 10
+        EvaluationPeriods: 1
+        Period: 300
+        TreatMissingData: "notBreaching"
+        AlarmActions:
+          - ${self:custom.alarmTopic}
+        OKActions:
+          - ${self:custom.alarmTopic}

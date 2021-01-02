@@ -1,0 +1,30 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2020-01-01T00:08:00.200Z",
+      "eventName": "ObjectCreated:CompleteMultipartUpload",
+      "userIdentity": {
+        "principalId": "AWS:AIDAVC"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "19.2.7.2"
+      },
+      "responseElements": {
+        "x-amz-request-id": "90CA",
+        "x-amz-id-2": "aiEtIuVgI"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "751383fb",
+        "object": {
+          "size": 18072,
+          "eTag": "02ce65237-1",
+          "sequencer": "005F173"
+        }
+      }
+    }
+  ]
+}
